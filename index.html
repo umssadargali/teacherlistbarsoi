@@ -203,42 +203,55 @@
 </div>
 
 <script>
-    // ⚠️ APNA GOOGLE APPS SCRIPT WEB APP URL YAHAN PASTE KAREIN
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbxgj_LdCZeaiyA2tI5u30h6lGGBEX4IKYA396Ee7ytWnZ07GJC3G5i2wHejlXD0hmiCIQ/exec';
+    // ⚠️ STEP 1 WALI GOOGLE SHEET KI PUBLISHED CSV LINK YAHAN DAALEIN
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIoQuDajJ-Ml8mV6iPN7R_XT8CV4Xk-0SnqjzOcB7pqW-leEABgNBWeHwXIku1o9GFrUsLdR7-bZVw/pub?gid=314968848&single=true&output=csv';
     
     let allData = [];
 
-    // Yeh function automatic call hoga jab Google Script data supply karega
-    function handleData(jsonData) {
+    // Simple CSV parser function to parse rows correctly
+    function parseCSV(text) {
+        let lines = text.split('\n');
+        // Row 14 par headers hain (index 13)
+        let headerLine = lines[13];
+        if (!headerLine) return [];
+        
+        // Headers parsing
+        let headers = headerLine.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(h => h.replace(/^"|"$/g, '').trim());
+        
+        let result = [];
+        for (let i = 14; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            let cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+            
+            let obj = {};
+            headers.forEach((header, index) => {
+                obj[header] = cols[index] || '';
+            });
+            
+            if (obj['Teacher Name'] || obj['School']) {
+                result.push(obj);
+            }
+        }
+        return result;
+    }
+
+    async function loadData() {
         try {
-            allData = jsonData;
+            const response = await fetch(csvUrl);
+            const dataText = await response.text();
+            
+            allData = parseCSV(dataText);
+            
             document.getElementById('status').style.display = 'none';
             document.getElementById('teacherTable').style.display = 'table';
             
             renderTable(allData);
             updateStats(allData);
         } catch (error) {
-            console.error('Processing Error:', error);
-            showError();
+            console.error('Error fetching CSV:', error);
+            document.getElementById('status').innerText = 'Data load nahi ho saka. Kripya check karein ki Sheet "Publish to Web" ki gayi hai ya nahi.';
+            document.getElementById('status').style.color = '#dc2626';
         }
-    }
-
-    // JSONP Injection System (Anti-Block)
-    function loadDataWithJSONP() {
-        const script = document.createElement('script');
-        // Script URL me automatic callback function attach karna
-        script.src = `${scriptUrl}?callback=handleData`;
-        
-        script.onerror = function() {
-            showError();
-        };
-        
-        document.body.appendChild(script);
-    }
-
-    function showError() {
-        document.getElementById('status').innerText = 'Data load nahi ho saka. Web App URL check karein aur Google Sheet ko Share -> "Anyone with link" karein.';
-        document.getElementById('status').style.color = '#dc2626';
     }
 
     function updateStats(data) {
@@ -246,8 +259,8 @@
         const uniqueSchools = new Set();
         
         data.forEach(row => {
-            if (row['Cluster Name']) uniqueClusters.add(row['Cluster Name'].toString().trim());
-            if (row['School']) uniqueSchools.add(row['School'].toString().trim());
+            if (row['Cluster Name']) uniqueClusters.add(row['Cluster Name']);
+            if (row['School']) uniqueSchools.add(row['School']);
         });
 
         document.getElementById('countCluster').innerText = uniqueClusters.size;
@@ -302,8 +315,7 @@
         updateStats(filtered);
     }
 
-    // Panna load hote hi JSONP trigger hoga
-    window.onload = loadDataWithJSONP;
+    window.onload = loadData;
 </script>
 
 </body>
