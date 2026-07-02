@@ -20,7 +20,6 @@
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
-        /* Headings Styling */
         .main-heading {
             text-align: center;
             color: #1e3a8a;
@@ -36,7 +35,6 @@
             font-weight: 500;
             letter-spacing: 1px;
         }
-        /* Stats Dashboard Styling */
         .stats-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -66,11 +64,9 @@
             font-size: 28px;
             font-weight: 700;
         }
-        /* Specific individual card colors */
         .stat-card.cluster { background: linear-gradient(135deg, #0f766e, #14b8a6); box-shadow: 0 4px 6px rgba(20, 184, 166, 0.2); }
         .stat-card.school { background: linear-gradient(135deg, #b45309, #f59e0b); box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2); }
         
-        /* Search Box */
         .search-box {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -102,7 +98,6 @@
             outline: none;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
-        /* Table Controls */
         .table-container {
             overflow-x: auto;
             max-height: 550px;
@@ -202,39 +197,50 @@
                 </tr>
             </thead>
             <tbody id="tableBody">
-                </tbody>
+            </tbody>
         </table>
     </div>
 </div>
 
 <script>
     // ⚠️ APNA GOOGLE APPS SCRIPT WEB APP URL YAHAN PASTE KAREIN
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwUnk77T0m5b8hwxN8QO17f9vRNDFdrSGeCQmGUGJxBVc4nflQqvROPogfLD3o-ekms/exec';
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbxgj_LdCZeaiyA2tI5u30h6lGGBEX4IKYA396Ee7ytWnZ07GJC3G5i2wHejlXD0hmiCIQ/exec';
     
     let allData = [];
 
-    async function loadData() {
+    // Yeh function automatic call hoga jab Google Script data supply karega
+    function handleData(jsonData) {
         try {
-            // Redirect aur CORS policies ke sath fetch request
-            const response = await fetch(scriptUrl, {
-                method: 'GET',
-                redirect: 'follow'
-            });
-            allData = await response.json();
-            
+            allData = jsonData;
             document.getElementById('status').style.display = 'none';
             document.getElementById('teacherTable').style.display = 'table';
             
             renderTable(allData);
             updateStats(allData);
         } catch (error) {
-            console.error('Fetch Error:', error);
-            document.getElementById('status').innerText = 'Data load nahi ho saka. Kripya check karein ki aapka Web App URL sahi hai aur Sheet setting public hai.';
-            document.getElementById('status').style.color = '#dc2626';
+            console.error('Processing Error:', error);
+            showError();
         }
     }
 
-    // Function to calculate Unique Clusters, Schools and total Teachers
+    // JSONP Injection System (Anti-Block)
+    function loadDataWithJSONP() {
+        const script = document.createElement('script');
+        // Script URL me automatic callback function attach karna
+        script.src = `${scriptUrl}?callback=handleData`;
+        
+        script.onerror = function() {
+            showError();
+        };
+        
+        document.body.appendChild(script);
+    }
+
+    function showError() {
+        document.getElementById('status').innerText = 'Data load nahi ho saka. Web App URL check karein aur Google Sheet ko Share -> "Anyone with link" karein.';
+        document.getElementById('status').style.color = '#dc2626';
+    }
+
     function updateStats(data) {
         const uniqueClusters = new Set();
         const uniqueSchools = new Set();
@@ -293,10 +299,11 @@
         });
 
         renderTable(filtered);
-        updateStats(filtered); // Filter ke mutabik cards ke numbers bhi change honge
+        updateStats(filtered);
     }
 
-    window.onload = loadData;
+    // Panna load hote hi JSONP trigger hoga
+    window.onload = loadDataWithJSONP;
 </script>
 
 </body>
