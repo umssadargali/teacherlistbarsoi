@@ -203,44 +203,25 @@
 </div>
 
 <script>
-    // ⚠️ STEP 1 WALI GOOGLE SHEET KI PUBLISHED CSV LINK YAHAN DAALEIN
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIoQuDajJ-Ml8mV6iPN7R_XT8CV4Xk-0SnqjzOcB7pqW-leEABgNBWeHwXIku1o9GFrUsLdR7-bZVw/pub?gid=314968848&single=true&output=csv';
+    // ⚠️ APNA NAYA GOOGLE APPS SCRIPT WEB APP URL YAHAN PASTE KAREIN
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwOKfiDYAJ3B0UoYo_TBVHY0Q-uotJxE2cO51h538qVzo8d-OJHoUYWBU8XCF118bgVpg/exec';
     
     let allData = [];
 
-    // Simple CSV parser function to parse rows correctly
-    function parseCSV(text) {
-        let lines = text.split('\n');
-        // Row 14 par headers hain (index 13)
-        let headerLine = lines[13];
-        if (!headerLine) return [];
-        
-        // Headers parsing
-        let headers = headerLine.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(h => h.replace(/^"|"$/g, '').trim());
-        
-        let result = [];
-        for (let i = 14; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            let cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
-            
-            let obj = {};
-            headers.forEach((header, index) => {
-                obj[header] = cols[index] || '';
-            });
-            
-            if (obj['Teacher Name'] || obj['School']) {
-                result.push(obj);
-            }
-        }
-        return result;
-    }
-
     async function loadData() {
         try {
-            const response = await fetch(csvUrl);
-            const dataText = await response.text();
+            // Humne yahan redirect policy ko strictly follow kiya hai jo Google Web Apps ke liye zaroori hai
+            const response = await fetch(scriptUrl, {
+                method: 'GET',
+                mode: 'cors',
+                redirect: 'follow'
+            });
             
-            allData = parseCSV(dataText);
+            if (!response.ok) {
+                throw new Error('Network response code error');
+            }
+
+            allData = await response.json();
             
             document.getElementById('status').style.display = 'none';
             document.getElementById('teacherTable').style.display = 'table';
@@ -248,8 +229,8 @@
             renderTable(allData);
             updateStats(allData);
         } catch (error) {
-            console.error('Error fetching CSV:', error);
-            document.getElementById('status').innerText = 'Data load nahi ho saka. Kripya check karein ki Sheet "Publish to Web" ki gayi hai ya nahi.';
+            console.error('Fetch Error Detail:', error);
+            document.getElementById('status').innerText = 'Data load nahi ho saka. Kripya check karein ki naya Web App URL sahi hai aur sheet public hai.';
             document.getElementById('status').style.color = '#dc2626';
         }
     }
@@ -259,8 +240,8 @@
         const uniqueSchools = new Set();
         
         data.forEach(row => {
-            if (row['Cluster Name']) uniqueClusters.add(row['Cluster Name']);
-            if (row['School']) uniqueSchools.add(row['School']);
+            if (row['Cluster Name']) uniqueClusters.add(row['Cluster Name'].toString().trim());
+            if (row['School']) uniqueSchools.add(row['School'].toString().trim());
         });
 
         document.getElementById('countCluster').innerText = uniqueClusters.size;
