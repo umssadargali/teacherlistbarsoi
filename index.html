@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Database Search Portal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        h2 {
+            text-align: center;
+            color: #1e3a8a;
+            margin-bottom: 20px;
+        }
+        .search-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .search-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .search-group label {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #475569;
+        }
+        .search-group input {
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .search-group input:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+            white-space: nowrap;
+        }
+        th {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        tr:hover {
+            background-color: #e2e8f0;
+        }
+        .status-msg {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #d97706;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Teacher Database Search (Columns A-M)</h2>
+    
+    <div class="search-box">
+        <div class="search-group">
+            <label for="searchName">Search by Teacher Name</label>
+            <input type="text" id="searchName" placeholder="Type name here..." oninput="filterData()">
+        </div>
+        <div class="search-group">
+            <label for="searchSchool">Search by School Name</label>
+            <input type="text" id="searchSchool" placeholder="Type school here..." oninput="filterData()">
+        </div>
+        <div class="search-group">
+            <label for="searchMobile">Search by Mobile No</label>
+            <input type="text" id="searchMobile" placeholder="Type mobile number..." oninput="filterData()">
+        </div>
+    </div>
+
+    <div id="status" class="status-msg">Google Sheet se data fetch ho raha hai... Kripya pratiksha karein.</div>
+
+    <div class="table-container">
+        <table id="teacherTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Sl. No</th>
+                    <th>Teacher ID</th>
+                    <th>Teacher Name</th>
+                    <th>Teacher Title</th>
+                    <th>Mobile No</th>
+                    <th>District Code</th>
+                    <th>District Name</th>
+                    <th>Block Code</th>
+                    <th>Block Name</th>
+                    <th>Cluster Code</th>
+                    <th>Cluster Name</th>
+                    <th>School UDISE Code</th>
+                    <th>School</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // ⚠️ APNA GOOGLE APPS SCRIPT WEB APP URL NICHE WALE QUOTES ME DAALEIN
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbySduczgCf9RBSL6W7bzhLK9RThvyHc5bgs2A1s6VuTQ8oTB7SzygoV2UHmttlUrLNreg/exec';
+    
+    let allData = [];
+
+    async function loadData() {
+        try {
+            const response = await fetch(scriptUrl);
+            allData = await response.json();
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('teacherTable').style.display = 'table';
+            renderTable(allData);
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('status').innerText = 'Data load nahi ho saka. Web App URL ya permissions check karein.';
+            document.getElementById('status').style.color = '#dc2626';
+        }
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; font-weight:bold; padding:20px;">Koi record nahi mila.</td></tr>';
+            return;
+        }
+
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row['Sl. No'] || ''}</td>
+                <td>${row['Teacher ID'] || ''}</td>
+                <td><strong>${row['Teacher Name'] || ''}</strong></td>
+                <td>${row['Teacher Title'] || ''}</td>
+                <td>${row['Mobile No'] || ''}</td>
+                <td>${row['District Code'] || ''}</td>
+                <td>${row['District Name'] || ''}</td>
+                <td>${row['Block Code'] || ''}</td>
+                <td>${row['Block Name'] || ''}</td>
+                <td>${row['Cluster Code'] || ''}</td>
+                <td>${row['Cluster Name'] || ''}</td>
+                <td>${row['School UDISE Code'] || ''}</td>
+                <td>${row['School'] || ''}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filterData() {
+        const nameQuery = document.getElementById('searchName').value.toLowerCase().trim();
+        const schoolQuery = document.getElementById('searchSchool').value.toLowerCase().trim();
+        const mobileQuery = document.getElementById('searchMobile').value.toLowerCase().trim();
+
+        const filtered = allData.filter(row => {
+            const nameMatch = (row['Teacher Name'] || '').toString().toLowerCase().includes(nameQuery);
+            const schoolMatch = (row['School'] || '').toString().toLowerCase().includes(schoolQuery);
+            const mobileMatch = (row['Mobile No'] || '').toString().toLowerCase().includes(mobileQuery);
+
+            return nameMatch && schoolMatch && mobileMatch;
+        });
+
+        renderTable(filtered);
+    }
+
+    window.onload = loadData;
+</script>
+
+</body>
+</html>
