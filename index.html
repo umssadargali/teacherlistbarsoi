@@ -3,35 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Database Search Portal</title>
+    <title>List of All Teachers Barsoi Block</title>
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background-color: #f0f2f5;
+            background-color: #f1f5f9;
             margin: 0;
             padding: 20px;
+            color: #1e293b;
         }
         .container {
             max-width: 100%;
             margin: 0 auto;
             background: #ffffff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
-        h2 {
+        /* Headings Styling */
+        .main-heading {
             text-align: center;
             color: #1e3a8a;
-            margin-bottom: 20px;
+            margin: 0 0 5px 0;
+            font-size: 28px;
+            font-weight: 700;
         }
+        .sub-heading {
+            text-align: center;
+            color: #64748b;
+            margin: 0 0 25px 0;
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+        /* Stats Dashboard Styling */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.9;
+        }
+        .stat-card .number {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        /* Specific individual card colors */
+        .stat-card.cluster { background: linear-gradient(135deg, #0f766e, #14b8a6); box-shadow: 0 4px 6px rgba(20, 184, 166, 0.2); }
+        .stat-card.school { background: linear-gradient(135deg, #b45309, #f59e0b); box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2); }
+        
+        /* Search Box */
         .search-box {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 15px;
             margin-bottom: 25px;
             background: #f8fafc;
             padding: 15px;
-            border-radius: 6px;
+            border-radius: 8px;
             border: 1px solid #e2e8f0;
         }
         .search-group {
@@ -42,9 +89,10 @@
             font-weight: 600;
             margin-bottom: 6px;
             color: #475569;
+            font-size: 13px;
         }
         .search-group input {
-            padding: 10px;
+            padding: 10px 12px;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
             font-size: 14px;
@@ -52,13 +100,14 @@
         .search-group input:focus {
             border-color: #3b82f6;
             outline: none;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
+        /* Table Controls */
         .table-container {
             overflow-x: auto;
-            max-height: 600px;
+            max-height: 550px;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
+            border-radius: 8px;
         }
         table {
             width: 100%;
@@ -70,51 +119,68 @@
         th {
             background-color: #1e3a8a;
             color: white;
-            padding: 12px;
+            padding: 14px 12px;
             position: sticky;
             top: 0;
             z-index: 10;
+            font-weight: 600;
         }
         td {
-            padding: 10px 12px;
+            padding: 12px;
             border-bottom: 1px solid #e2e8f0;
         }
         tr:nth-child(even) {
             background-color: #f8fafc;
         }
         tr:hover {
-            background-color: #e2e8f0;
+            background-color: #f1f5f9;
         }
         .status-msg {
             text-align: center;
             font-size: 16px;
             font-weight: bold;
             color: #d97706;
-            margin: 20px 0;
+            margin: 30px 0;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Teacher Database Search (Columns A-M)</h2>
+    <h1 class="main-heading">List of All Teachers Barsoi Block</h1>
+    <h3 class="sub-heading">Barsoi, Katihar, Bihar</h3>
+    
+    <div class="stats-container">
+        <div class="stat-card cluster">
+            <h3>Total Number of Clusters</h3>
+            <div class="number" id="countCluster">0</div>
+        </div>
+        <div class="stat-card school">
+            <h3>Total Number of Schools</h3>
+            <div class="number" id="countSchool">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Total Number of Teachers</h3>
+            <div class="number" id="countTeacher">0</div>
+        </div>
+    </div>
     
     <div class="search-box">
         <div class="search-group">
-            <label for="searchName">Search by Teacher Name</label>
-            <input type="text" id="searchName" placeholder="Type name here..." oninput="filterData()">
+            <label for="searchName">🔍 Search by Teacher Name</label>
+            <input type="text" id="searchName" placeholder="Type name..." oninput="filterData()">
         </div>
         <div class="search-group">
-            <label for="searchSchool">Search by School Name</label>
-            <input type="text" id="searchSchool" placeholder="Type school here..." oninput="filterData()">
+            <label for="searchSchool">🏫 Search by School Name</label>
+            <input type="text" id="searchSchool" placeholder="Type school name..." oninput="filterData()">
         </div>
         <div class="search-group">
-            <label for="searchMobile">Search by Mobile No</label>
+            <label for="searchMobile">📱 Search by Mobile No</label>
             <input type="text" id="searchMobile" placeholder="Type mobile number..." oninput="filterData()">
         </div>
     </div>
 
-    <div id="status" class="status-msg">Google Sheet se data fetch ho raha hai... Kripya pratiksha karein.</div>
+    <div id="status" class="status-msg">Google Sheet se live data fetch ho raha hai... Kripya pratiksha karein.</div>
 
     <div class="table-container">
         <table id="teacherTable" style="display: none;">
@@ -142,23 +208,45 @@
 </div>
 
 <script>
-    // ⚠️ APNA GOOGLE APPS SCRIPT WEB APP URL NICHE WALE QUOTES ME DAALEIN
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbySduczgCf9RBSL6W7bzhLK9RThvyHc5bgs2A1s6VuTQ8oTB7SzygoV2UHmttlUrLNreg/exec';
+    // ⚠️ APNA GOOGLE APPS SCRIPT WEB APP URL YAHAN PASTE KAREIN
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwUnk77T0m5b8hwxN8QO17f9vRNDFdrSGeCQmGUGJxBVc4nflQqvROPogfLD3o-ekms/exec';
     
     let allData = [];
 
     async function loadData() {
         try {
-            const response = await fetch(scriptUrl);
+            // Redirect aur CORS policies ke sath fetch request
+            const response = await fetch(scriptUrl, {
+                method: 'GET',
+                redirect: 'follow'
+            });
             allData = await response.json();
+            
             document.getElementById('status').style.display = 'none';
             document.getElementById('teacherTable').style.display = 'table';
+            
             renderTable(allData);
+            updateStats(allData);
         } catch (error) {
-            console.error('Error:', error);
-            document.getElementById('status').innerText = 'Data load nahi ho saka. Web App URL ya permissions check karein.';
+            console.error('Fetch Error:', error);
+            document.getElementById('status').innerText = 'Data load nahi ho saka. Kripya check karein ki aapka Web App URL sahi hai aur Sheet setting public hai.';
             document.getElementById('status').style.color = '#dc2626';
         }
+    }
+
+    // Function to calculate Unique Clusters, Schools and total Teachers
+    function updateStats(data) {
+        const uniqueClusters = new Set();
+        const uniqueSchools = new Set();
+        
+        data.forEach(row => {
+            if (row['Cluster Name']) uniqueClusters.add(row['Cluster Name'].toString().trim());
+            if (row['School']) uniqueSchools.add(row['School'].toString().trim());
+        });
+
+        document.getElementById('countCluster').innerText = uniqueClusters.size;
+        document.getElementById('countSchool').innerText = uniqueSchools.size;
+        document.getElementById('countTeacher').innerText = data.length;
     }
 
     function renderTable(data) {
@@ -166,7 +254,7 @@
         tbody.innerHTML = '';
         
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; font-weight:bold; padding:20px;">Koi record nahi mila.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; font-weight:bold; padding:20px; color:#64748b;">Koi record nahi mila.</td></tr>';
             return;
         }
 
@@ -205,6 +293,7 @@
         });
 
         renderTable(filtered);
+        updateStats(filtered); // Filter ke mutabik cards ke numbers bhi change honge
     }
 
     window.onload = loadData;
