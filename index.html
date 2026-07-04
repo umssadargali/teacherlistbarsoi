@@ -200,15 +200,17 @@
 </div>
 
 <script>
-    // ⚠️ APNI GOOGLE SHEET KI PUBLISHED CSV LINK YAHAN PASTE KAREIN
+    // Aapki exact published CSV link maine pehle se yahan set kar di hai
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlb8ldpY6cIrPZhUv1HddjVnSWaCVSxVnBYuBVNJbajyYh740D36yBFNhASlL9Gy7dwpaumDPrEzeM/pub?output=csv';
     
     let allData = [];
 
-    // Safe CSV Text Parser for Row 14 header dynamic layout
+    // Robust CSV Text Parser that handles carriage returns (\r\n) correctly
     function parseCSVData(text) {
-        let lines = text.split('\n');
-        // Row 14 par exact data headers milte hain (Index 13)
+        // Line break fix: Split by \r\n or \n
+        let lines = text.split(/\r?\n/);
+        
+        // Row 14 par exact data headers hain (Index 13)
         let headerLine = lines[13]; 
         if (!headerLine) return [];
         
@@ -217,14 +219,14 @@
         let parsedRows = [];
         for (let i = 14; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
-            let cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^**]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+            let cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
             
             let rowObj = {};
             headers.forEach((header, index) => {
                 rowObj[header] = cols[index] || '';
             });
             
-            // Checking both columns layout fallback
+            // Layout alignment according to your exact sheet headers
             let finalSchool = rowObj['School'] || rowObj['School Name'] || '';
             rowObj['CalculatedSchool'] = finalSchool;
 
@@ -249,7 +251,7 @@
             updateStats(allData);
         } catch (error) {
             console.error('CSV Load Error:', error);
-            document.getElementById('status').innerText = 'Data load nahi ho saka. Kripya check karein ki Google sheet properly "Publish to Web" ki gayi hai.';
+            document.getElementById('status').innerText = 'Data load nahi ho saka. Kripya check karein ki aapka internet chal raha hai aur sheet published hai.';
             document.getElementById('status').style.color = '#dc2626';
         }
     }
