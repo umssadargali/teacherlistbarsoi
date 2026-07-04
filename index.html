@@ -64,12 +64,12 @@
             font-size: 28px;
             font-weight: 700;
         }
-        .stat-card.cluster { background: linear-gradient(135deg, #0f766e, #14b8a6); box-shadow: 0 4px 6px rgba(20, 184, 166, 0.2); }
+        .stat-card.title-match { background: linear-gradient(135deg, #0f766e, #14b8a6); box-shadow: 0 4px 6px rgba(20, 184, 166, 0.2); }
         .stat-card.school { background: linear-gradient(135deg, #b45309, #f59e0b); box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2); }
         
         .search-box {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 15px;
             margin-bottom: 25px;
             background: #f8fafc;
@@ -146,32 +146,32 @@
     <h3 class="sub-heading">Barsoi, Katihar, Bihar</h3>
     
     <div class="stats-container">
-        <div class="stat-card cluster">
-            <h3>Total Number of Clusters</h3>
-            <div class="number" id="countCluster">0</div>
+        <div class="stat-card">
+            <h3>Total Number of Teachers</h3>
+            <div class="number" id="countTeacher">0</div>
         </div>
         <div class="stat-card school">
             <h3>Total Number of Schools</h3>
             <div class="number" id="countSchool">0</div>
         </div>
-        <div class="stat-card">
-            <h3>Total Number of Teachers</h3>
-            <div class="number" id="countTeacher">0</div>
+        <div class="stat-card title-match">
+            <h3>Filtered Category Count</h3>
+            <div class="number" id="countTitleMatch">0</div>
         </div>
     </div>
     
     <div class="search-box">
         <div class="search-group">
-            <label for="searchName">🔍 Search by Teacher Name</label>
+            <label for="searchName">🔍 Search by Teacher Name (Col B)</label>
             <input type="text" id="searchName" placeholder="Type name..." oninput="filterData()">
         </div>
         <div class="search-group">
-            <label for="searchSchool">🏫 Search by School Name</label>
-            <input type="text" id="searchSchool" placeholder="Type school name..." oninput="filterData()">
+            <label for="searchTitle">🔖 Search by Teacher Title (Col C)</label>
+            <input type="text" id="searchTitle" placeholder="e.g. TRE-1, TRE-2..." oninput="filterData()">
         </div>
         <div class="search-group">
-            <label for="searchMobile">📱 Search by Mobile No</label>
-            <input type="text" id="searchMobile" placeholder="Type mobile number..." oninput="filterData()">
+            <label for="searchSchool">🏫 Search by School Name (Col E)</label>
+            <input type="text" id="searchSchool" placeholder="Type school name..." oninput="filterData()">
         </div>
     </div>
 
@@ -185,15 +185,7 @@
                     <th>Teacher ID</th>
                     <th>Teacher Name</th>
                     <th>Teacher Title</th>
-                    <th>Mobile No</th>
-                    <th>District Code</th>
-                    <th>District Name</th>
-                    <th>Block Code</th>
-                    <th>Block Name</th>
-                    <th>Cluster Code</th>
-                    <th>Cluster Name</th>
-                    <th>School UDISE Code</th>
-                    <th>School</th>
+                    <th>School Name</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
@@ -203,22 +195,21 @@
 </div>
 
 <script>
-    // ⚠️ YAHA APNI GOOGLE SHEET KI PUBLISHED CSV LINK PASTE KAREIN
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIoQuDajJ-Ml8mV6iPN7R_XT8CV4Xk-0SnqjzOcB7pqW-leEABgNBWeHwXIku1o9GFrUsLdR7-bZVw/pub?gid=314968848&single=true&output=csv';
+    // ⚠️ APNI NAYI GOOGLE SHEET KI PUBLISHED CSV LINK YAHAN PASTE KAREIN
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlb8ldpY6cIrPZhUv1HddjVnSWaCVSxVnBYuBVNJbajyYh740D36yBFNhASlL9Gy7dwpaumDPrEzeM/pub?output=csv';
     
     let allData = [];
 
-    // Safe CSV Text Parser function for Row 14 headers
+    // Nayi sheet ke mutabik: Row 5 par headers hain (Index 4)
     function parseCSVData(text) {
         let lines = text.split('\n');
-        // Row number 14 par aapka exact headers (Sl. No, Teacher Name...) hai (Index 13)
-        let headerLine = lines[13];
+        let headerLine = lines[4]; // Row 5 (Index 4)
         if (!headerLine) return [];
         
         let headers = headerLine.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(h => h.replace(/^"|"$/g, '').trim());
         
         let parsedRows = [];
-        for (let i = 14; i < lines.length; i++) {
+        for (let i = 5; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             let cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
             
@@ -227,8 +218,7 @@
                 rowObj[header] = cols[index] || '';
             });
             
-            // Sirf wahi records lein jisme legitimate content ho
-            if (rowObj['Teacher Name'] || rowObj['School']) {
+            if (rowObj['Teacher Name'] || rowObj['School Name'] || rowObj['Teacher ID']) {
                 parsedRows.push(rowObj);
             }
         }
@@ -255,17 +245,25 @@
     }
 
     function updateStats(data) {
-        const uniqueClusters = new Set();
         const uniqueSchools = new Set();
+        let titleMatchCount = 0;
+        
+        const titleQuery = document.getElementById('searchTitle').value.toLowerCase().trim();
         
         data.forEach(row => {
-            if (row['Cluster Name']) uniqueClusters.add(row['Cluster Name'].toString().trim());
-            if (row['School']) uniqueSchools.add(row['School'].toString().trim());
+            if (row['School Name']) uniqueSchools.add(row['School Name'].toString().trim());
+            
+            // Agar Column C (Teacher Title) search box me kuch typed hai toh uska alag se count karega
+            if (titleQuery && (row['Teacher Title'] || '').toString().toLowerCase().includes(titleQuery)) {
+                titleMatchCount++;
+            }
         });
 
-        document.getElementById('countCluster').innerText = uniqueClusters.size;
-        document.getElementById('countSchool').innerText = uniqueSchools.size;
         document.getElementById('countTeacher').innerText = data.length;
+        document.getElementById('countSchool').innerText = uniqueSchools.size;
+        
+        // Agar category input khali hai toh pure current filtered records ka size hi dikhayega
+        document.getElementById('countTitleMatch').innerText = titleQuery ? titleMatchCount : data.length;
     }
 
     function renderTable(data) {
@@ -273,7 +271,7 @@
         tbody.innerHTML = '';
         
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; font-weight:bold; padding:20px; color:#64748b;">Koi record nahi mila.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; font-weight:bold; padding:20px; color:#64748b;">Koi record nahi mila.</td></tr>';
             return;
         }
 
@@ -283,16 +281,8 @@
                 <td>${row['Sl. No'] || ''}</td>
                 <td>${row['Teacher ID'] || ''}</td>
                 <td><strong>${row['Teacher Name'] || ''}</strong></td>
-                <td>${row['Teacher Title'] || ''}</td>
-                <td>${row['Mobile No'] || ''}</td>
-                <td>${row['District Code'] || ''}</td>
-                <td>${row['District Name'] || ''}</td>
-                <td>${row['Block Code'] || ''}</td>
-                <td>${row['Block Name'] || ''}</td>
-                <td>${row['Cluster Code'] || ''}</td>
-                <td>${row['Cluster Name'] || ''}</td>
-                <td>${row['School UDISE Code'] || ''}</td>
-                <td>${row['School'] || ''}</td>
+                <td><span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-weight:600;">${row['Teacher Title'] || ''}</span></td>
+                <td>${row['School Name'] || ''}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -300,15 +290,15 @@
 
     function filterData() {
         const nameQuery = document.getElementById('searchName').value.toLowerCase().trim();
+        const titleQuery = document.getElementById('searchTitle').value.toLowerCase().trim();
         const schoolQuery = document.getElementById('searchSchool').value.toLowerCase().trim();
-        const mobileQuery = document.getElementById('searchMobile').value.toLowerCase().trim();
 
         const filtered = allData.filter(row => {
             const nameMatch = (row['Teacher Name'] || '').toString().toLowerCase().includes(nameQuery);
-            const schoolMatch = (row['School'] || '').toString().toLowerCase().includes(schoolQuery);
-            const mobileMatch = (row['Mobile No'] || '').toString().toLowerCase().includes(mobileQuery);
+            const titleMatch = (row['Teacher Title'] || '').toString().toLowerCase().includes(titleQuery);
+            const schoolMatch = (row['School Name'] || '').toString().toLowerCase().includes(schoolQuery);
 
-            return nameMatch && schoolMatch && mobileMatch;
+            return nameMatch && titleMatch && schoolMatch;
         });
 
         renderTable(filtered);
