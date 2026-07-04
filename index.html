@@ -69,7 +69,7 @@
         
         .search-box {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-bottom: 25px;
             background: #f8fafc;
@@ -162,15 +162,19 @@
     
     <div class="search-box">
         <div class="search-group">
-            <label for="searchName">🔍 Search by Teacher Name (Col B)</label>
+            <label for="searchName">🔍 Search by Teacher Name</label>
             <input type="text" id="searchName" placeholder="Type name..." oninput="filterData()">
         </div>
         <div class="search-group">
-            <label for="searchTitle">🔖 Search by Teacher Title (Col C)</label>
-            <input type="text" id="searchTitle" placeholder="e.g. TRE-1, TRE-2..." oninput="filterData()">
+            <label for="searchTitle">🔖 Search by Title (TRE-1, TRE-2...)</label>
+            <input type="text" id="searchTitle" placeholder="e.g. TRE-1..." oninput="filterData()">
         </div>
         <div class="search-group">
-            <label for="searchSchool">🏫 Search by School Name (Col E)</label>
+            <label for="searchMobile">📱 Search by Mobile Number</label>
+            <input type="text" id="searchMobile" placeholder="Type mobile no..." oninput="filterData()">
+        </div>
+        <div class="search-group">
+            <label for="searchSchool">🏫 Search by School Name</label>
             <input type="text" id="searchSchool" placeholder="Type school name..." oninput="filterData()">
         </div>
     </div>
@@ -185,6 +189,7 @@
                     <th>Teacher ID</th>
                     <th>Teacher Name</th>
                     <th>Teacher Title</th>
+                    <th>Mobile No</th>
                     <th>School Name</th>
                 </tr>
             </thead>
@@ -195,30 +200,35 @@
 </div>
 
 <script>
-    // ⚠️ APNI NAYI GOOGLE SHEET KI PUBLISHED CSV LINK YAHAN PASTE KAREIN
+    // ⚠️ APNI GOOGLE SHEET KI PUBLISHED CSV LINK YAHAN PASTE KAREIN
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlb8ldpY6cIrPZhUv1HddjVnSWaCVSxVnBYuBVNJbajyYh740D36yBFNhASlL9Gy7dwpaumDPrEzeM/pub?output=csv';
     
     let allData = [];
 
-    // Nayi sheet ke mutabik: Row 5 par headers hain (Index 4)
+    // Safe CSV Text Parser for Row 14 header dynamic layout
     function parseCSVData(text) {
         let lines = text.split('\n');
-        let headerLine = lines[4]; // Row 5 (Index 4)
+        // Row 14 par exact data headers milte hain (Index 13)
+        let headerLine = lines[13]; 
         if (!headerLine) return [];
         
         let headers = headerLine.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(h => h.replace(/^"|"$/g, '').trim());
         
         let parsedRows = [];
-        for (let i = 5; i < lines.length; i++) {
+        for (let i = 14; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
-            let cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+            let cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^**]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
             
             let rowObj = {};
             headers.forEach((header, index) => {
                 rowObj[header] = cols[index] || '';
             });
             
-            if (rowObj['Teacher Name'] || rowObj['School Name'] || rowObj['Teacher ID']) {
+            // Checking both columns layout fallback
+            let finalSchool = rowObj['School'] || rowObj['School Name'] || '';
+            rowObj['CalculatedSchool'] = finalSchool;
+
+            if (rowObj['Teacher Name'] || rowObj['Teacher ID']) {
                 parsedRows.push(rowObj);
             }
         }
@@ -251,9 +261,8 @@
         const titleQuery = document.getElementById('searchTitle').value.toLowerCase().trim();
         
         data.forEach(row => {
-            if (row['School Name']) uniqueSchools.add(row['School Name'].toString().trim());
+            if (row['CalculatedSchool']) uniqueSchools.add(row['CalculatedSchool'].toString().trim());
             
-            // Agar Column C (Teacher Title) search box me kuch typed hai toh uska alag se count karega
             if (titleQuery && (row['Teacher Title'] || '').toString().toLowerCase().includes(titleQuery)) {
                 titleMatchCount++;
             }
@@ -261,8 +270,6 @@
 
         document.getElementById('countTeacher').innerText = data.length;
         document.getElementById('countSchool').innerText = uniqueSchools.size;
-        
-        // Agar category input khali hai toh pure current filtered records ka size hi dikhayega
         document.getElementById('countTitleMatch').innerText = titleQuery ? titleMatchCount : data.length;
     }
 
@@ -271,7 +278,7 @@
         tbody.innerHTML = '';
         
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; font-weight:bold; padding:20px; color:#64748b;">Koi record nahi mila.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; font-weight:bold; padding:20px; color:#64748b;">Koi record nahi mila.</td></tr>';
             return;
         }
 
@@ -282,7 +289,8 @@
                 <td>${row['Teacher ID'] || ''}</td>
                 <td><strong>${row['Teacher Name'] || ''}</strong></td>
                 <td><span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-weight:600;">${row['Teacher Title'] || ''}</span></td>
-                <td>${row['School Name'] || ''}</td>
+                <td>${row['Mobile No'] || ''}</td>
+                <td>${row['CalculatedSchool'] || ''}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -291,14 +299,16 @@
     function filterData() {
         const nameQuery = document.getElementById('searchName').value.toLowerCase().trim();
         const titleQuery = document.getElementById('searchTitle').value.toLowerCase().trim();
+        const mobileQuery = document.getElementById('searchMobile').value.toLowerCase().trim();
         const schoolQuery = document.getElementById('searchSchool').value.toLowerCase().trim();
 
         const filtered = allData.filter(row => {
             const nameMatch = (row['Teacher Name'] || '').toString().toLowerCase().includes(nameQuery);
             const titleMatch = (row['Teacher Title'] || '').toString().toLowerCase().includes(titleQuery);
-            const schoolMatch = (row['School Name'] || '').toString().toLowerCase().includes(schoolQuery);
+            const mobileMatch = (row['Mobile No'] || '').toString().toLowerCase().includes(mobileQuery);
+            const schoolMatch = (row['CalculatedSchool'] || '').toString().toLowerCase().includes(schoolQuery);
 
-            return nameMatch && titleMatch && schoolMatch;
+            return nameMatch && titleMatch && mobileMatch && schoolMatch;
         });
 
         renderTable(filtered);
